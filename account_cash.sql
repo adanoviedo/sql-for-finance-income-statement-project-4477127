@@ -1,6 +1,4 @@
-create materialized view account_cash as
-with 
-purchase_dates as(
+create materialized view account_cash as with purchase_dates as(
   select case
       when payment_method = 'cash' then payment_at
       else payment_at + interval '1 month'
@@ -38,33 +36,47 @@ revenue as(
 ),
 loan_in as(
   select date_part('year', loan_at) as period_year,
-        sum(value) as total_amount
+    sum(value) as total_amount
   from loans
   group by date_part('year', loan_at)
 ),
 expenses as(
-select date_part('year', payment_date) as period_year,
-        - sum(amount) as total_amount
+  select date_part('year', payment_date) as period_year,
+    - sum(amount) as total_amount
   from payments
-  where payment_type in ('equipment', 'wage', 'rent', 'utility', 'tax', 'loan', 'interest')
+  where payment_type in (
+      'equipment',
+      'wage',
+      'rent',
+      'utility',
+      'tax',
+      'loan',
+      'interest'
+    )
   group by date_part('year', payment_date)
 ),
 cash_union as(
-  select * from loan_in
-  union all 
-  select * from expenses
+  select *
+  from loan_in
   union all
-  select * from purchase
-  union all 
-  select * from revenue
+  select *
+  from expenses
+  union all
+  select *
+  from purchase
+  union all
+  select *
+  from revenue
 ),
 cash_amount as(
-  select period_year
-        , sum(total_amount) as total_amount
-        from cash_union
-        group by period_year
+  select period_year,
+    sum(total_amount) as total_amount
+  from cash_union
+  group by period_year
 )
 select period_year,
-      'Cash' as account,
-      sum(total_amount) over(order by period_year) as total_amount
+  'Cash' as account,
+  sum(total_amount) over(
+    order by period_year
+  ) as total_amount
 from cash_amount
