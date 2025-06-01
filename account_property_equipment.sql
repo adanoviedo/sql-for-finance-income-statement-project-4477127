@@ -1,9 +1,10 @@
 create materialized view account_property_equipment with depreciation_dates as(
   select id,
     calendar_at,
-    year as period_year case
+    year as period_year,
+    case
       when year = date_part('year', payment_date + interval '10 years')
-      and month = date_part('month', payment_date) then
+      and month = date_part('month', payment_date) then 1
       when month = 12 then 1
       else 0
     end as flag_1_year,
@@ -20,7 +21,7 @@ depreciation_sum as(
     sum(installments) over(
       partition by id
       order by calendar_at
-    ) depreciation_amount
+    ) as depreciation_amount
   from depreciation_dates
 ),
 depreciation as(
